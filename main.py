@@ -1,109 +1,23 @@
 from flask import Flask, request, redirect, render_template
 import cgi
 import os
+import jinja2
+
+template_dir = os.path.join(os.path.dirname(__file__), 'templates')
+jinja_env = jinja2.Environment(loader=jinja2.FileSystemLoader(template_dir))
 
 app = Flask(__name__)
 app.config['DEBUG'] = True
 
-
-form = """
-<!doctype html>
-<html>
-    <body>
-        <form action="/hello" method="post">
-            <label for="first-name">First Name:</label>
-            <input id="first-name" type="text" name="first_name" />
-            <input type="submit" />
-        </form>
-    </body>
-</html>
-"""
-
-
-@app.route("/")
-def index():
-    return form
-
-
-@app.route("/hello", methods=['POST'])
-def hello():
-    first_name = request.form['first_name']
-    return '<h1>Hello, ' + first_name + '</h1>'
-
-
-time_form = """
-    <style>
-        .error {{ color: red; }}
-    </style>
-    <h1>Validate Time</h1>
-    <form method='POST'>
-        <label>Hours (24-hour format)
-            <input name="hours" type="text" value='{hours}' />
-        </label>
-        <p class="error">{hours_error}</p>
-        <label>Minutes
-            <input name="minutes" type="text" value='{minutes}' />
-        </label>
-        <p class="error">{minutes_error}</p>
-        <input type="submit" value="Validate" />
-    </form>
-    """
-#################################################
-@app.route('/validate-time')
-def display_time_form():
-    return time_form.format(hours='', hours_error='',
-                            minutes='', minutes_error='')
-
-user_form = """
-    <style>
-        .error {{ color: red; }}
-    </style>
-    <h1>User Signup</h1>
-
-    <form method='POST'>
-
-    <div>
-        <label>Username:
-            <input name="username" type="text" value='{username}' />
-        </label>
-        <span class="error">{username_error}</span>
-    </div>
-
-    <div>
-        <label>Password:
-            <input name="password" type="password" value='{password}' />
-        </label>
-        <span class="error">{password_error}</span>
-    </div>
-
-    <div>
-        <label>Verify Password:
-            <input name="verify_password" type="password" value='{verify_password}' />
-        </label>
-        <span class="error">{verify_password_error}</span>
-    </div>
-
-    <div>
-        <label>Email (optional):
-            <input name="email" type="text" value='{email}' />
-        </label>
-        <span class="error">{email_error}</span>
-    </div>
-
-    <div>
-        <input type="submit" value="Sign Up" />
-    </div>
-</form>
-    """
-
-@app.route('/validate-user')
+@app.route('/')
 def display_user_form():
-    return user_form.format(username="", username_error="",
+    template = template = jinja_env.get_template('user_signup.html')
+    return template.render(username="", username_error="",
                             password="",password_error="",
                             verify_password="", verify_password_error="",
                             email="", email_error="")
 
-@app.route('/validate-user', methods=['POST'])
+@app.route('/', methods=['POST'])
 def validate_user():
     username = request.form["username"]
     password = request.form["password"]
@@ -165,7 +79,8 @@ def validate_user():
         display_name = username
         return redirect("/welcome?display_name={0}".format(display_name))
     else:
-        return user_form.format(username_error=username_error,
+        template = template = jinja_env.get_template('user_signup.html')
+        return template.render(title="User Signup",username_error=username_error,
                          password_error=password_error,
                          verify_password_error=verify_password_error,
                          email_error=email_error,
@@ -174,61 +89,8 @@ def validate_user():
 
 @app.route("/welcome")
 def welcome():
+    template = template = jinja_env.get_template('welcome.html')
     display_name = request.args.get("display_name")
-    return "<h1>Welcome, {0}!</h1>".format(display_name)
-
-
-
-
-    
-
-
-
-
-
-########################################################
-def is_integer(num):
-    try:
-        int(num)
-        return True
-    except ValueError:
-        return False
-
-
-@app.route('/validate-time', methods=['POST'])
-def validate_time():
-
-    hours = request.form['hours']
-    minutes = request.form['minutes']
-
-    hours_error = ''
-    minutes_error = ''
-
-    if not is_integer(hours):
-        hours_error = 'Not a valid integer'
-        hours = ''
-    else:
-        hours = int(hours)
-        if hours > 23 or hours < 0:
-            hours_error = 'Hour value out of range (0-23)'
-            hours = ''
-
-    if not is_integer(minutes):
-        minutes_error = 'Not a valid integer'
-        minutes = ''
-    else:
-        minutes = int(minutes)
-        if minutes > 59 or minutes < 0:
-            minutes_error = 'Minutes value out of range (0-59)'
-            minutes = ''
-
-    if not minutes_error and not hours_error:
-        return "Success!"
-    else:
-        return time_form.format(hours_error=hours_error,
-                                minutes_error=minutes_error,
-                                hours=hours,
-                                minutes=minutes)
-
+    return template.render(title="Welcome", display_name=display_name)
 
 app.run()
