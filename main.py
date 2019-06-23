@@ -162,7 +162,8 @@ def validate_user():
             email_error = "Invalid email."
 
     if not username_error and not password_error and not verify_password_error and not email_error:
-        return "Successssss!"
+        display_name = username
+        return redirect("/welcome?display_name={0}".format(display_name))
     else:
         return user_form.format(username_error=username_error,
                          password_error=password_error,
@@ -170,6 +171,13 @@ def validate_user():
                          email_error=email_error,
                          username=username, password="", 
                          verify_password="", email=email)
+
+@app.route("/welcome")
+def welcome():
+    display_name = request.args.get("display_name")
+    return "<h1>Welcome, {0}!</h1>".format(display_name)
+
+
 
 
     
